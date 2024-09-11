@@ -1,4 +1,4 @@
-his Python file uses the following encoding: utf-8
+# this Python file uses the following encoding: utf-8
 import sys
 
 from PySide6.QtSql import QSqlDatabase, QSqlQuery
@@ -191,11 +191,10 @@ def openDatabase():
             "Database Error: %s" % con.lastError().databaseText(),
         )
         sys.exit(1)
-
     return con
 
 def displayTable(self):
-    openDatabase()
+    db_con = openDatabase()
 
     query = QSqlQuery("""SELECT word_key, stem, category, WORDS.timestamp, COUNT(word_key) AS frequency
                         FROM LOOKUPS
@@ -223,6 +222,9 @@ def displayTable(self):
     header.setSectionResizeMode(2, QHeaderView.ResizeMode.Interactive)
     header.setSectionResizeMode(3, QHeaderView.ResizeMode.Interactive)
     header.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
+
+    db_con.close()
+    QSqlDatabase.removeDatabase(db_con.connectionName())
 
 
 def createDisplayTable(self, layout):
