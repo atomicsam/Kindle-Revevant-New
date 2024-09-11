@@ -1,4 +1,4 @@
-# This Python file uses the following encoding: utf-8
+his Python file uses the following encoding: utf-8
 import sys
 
 from PySide6.QtSql import QSqlDatabase, QSqlQuery
@@ -29,8 +29,9 @@ import pathlib
 
 # only works for windows
 # find alternatives for linux & macos
-import win32api
-import win32file
+if sys.platform == "win32":
+    import win32api
+    import win32file
 
 # default file locations
 KINDLE_DB_LOCATION = ""
@@ -141,6 +142,9 @@ class Ui_KindleRevenant(QMainWindow):
     def onMyToolBarButtonClick(self, s):
         print("click", s)
 
+    def double_clicked_cell(self):
+        print("Double clicked cell")
+
 def mergeDatabases():
     #  a copy of the existing kindle vocab.db if revenant.db doesn't exist
     print("The kindle location is " + KINDLE_DB_LOCATION + str(os.path.isfile(KINDLE_DB_LOCATION)))
@@ -228,7 +232,7 @@ def createDisplayTable(self, layout):
     self.view.verticalHeader().setVisible(False)
     self.view.setHorizontalHeaderLabels(["Word", "Stem", "Category", "Date", "Frequency"])
     self.view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-
+    self.view.setEditTriggers(QAbstractItemView.NoEditTriggers)
     layout.addWidget(self.view)
 
 def formatWordKey(word):
