@@ -58,9 +58,12 @@ class Ui_KindleRevenant(QMainWindow):
         buttonLayout = QHBoxLayout()
 
         createDisplayTable(self, layout)
+
         print(os.path.exists(os.path.join(pathlib.Path().resolve(), NEW_DB)))
         print(os.path.join(pathlib.Path().resolve(), NEW_DB))
-        if os.path.exists(os.path.join(pathlib.Path().resolve(), NEW_DB)):
+        print(os.path.isfile(NEW_DB))
+
+        if os.path.exists(os.path.exists(NEW_DB)):
             displayTable(self)
         showButtons(self, buttonLayout)
         kindleConnectedLabel = self._ToolBar()
@@ -88,7 +91,6 @@ class Ui_KindleRevenant(QMainWindow):
             mergeDatabases()
             displayTable(self)
         elif KINDLE_DB_LOCATION:
-            print(KINDLE_DB_LOCATION)
             mergeDatabases()
             displayTable(self)
         else:
@@ -149,26 +151,48 @@ def mergeDatabases():
     #  a copy of the existing kindle vocab.db if revenant.db doesn't exist
     print("The kindle location is " + KINDLE_DB_LOCATION + str(os.path.isfile(KINDLE_DB_LOCATION)))
     if not KINDLE_DB_LOCATION:
-        print("Kindle DB Location not set.")
+        QMessageBox.warning(
+            None,
+            "Error",
+            "The Kindle DB was not found or it's location has not been specified."
+        )
     elif not os.path.isfile(KINDLE_DB_LOCATION):
-        print(f"The specified kindle db location {KINDLE_DB_LOCATION} does not exist")
+        QMessageBox.warning(
+            None,
+            "Error",
+            f"The specified kindle db location {KINDLE_DB_LOCATION} does not exist"
+        )
     elif not NEW_DB:
-        print(f"The export location has not been set")
+        QMessageBox.warning(
+            None,
+            "Error",
+            f"The export location has not been set"
+        )
     elif not os.path.isfile(NEW_DB):
         shutil.copyfile(KINDLE_DB_LOCATION, NEW_DB)
-        print("file copied")
-    else:
-        # if both files exist then merge the tables from the old & new database together
-        copyTables(NEW_DB)
+
+        numWords = getNumberRows()
 
         QMessageBox.information(
             None,
             "Information",
-            f"Vocabulary was successfully imported from the following location:\n{KINDLE_DB_LOCATION}"
+            f"A new Kindle Revenant DB has been created at {NEW_DB}.\n{numWords} were successfully imported."
+        )
+    else:
+        # if both files exist then merge the tables from the old & new database together
+        currentWords = getNumberRows()
+        copyTables(NEW_DB)
+        newNumberWords = getNumberRows()
+        numWords = newNumberWords - currentWords
+
+        QMessageBox.information(
+            None,
+            "Information",
+            f"{numWords} words were successfully imported from the following location:\n{KINDLE_DB_LOCATION}"
         )
 
-def copyTables(database_to_be_copied):
-    db = sqlite3.connect(database_to_be_copied)
+def copyTables(dbToCopy):
+    db = sqlite3.connect(dbToCopy)
     db_cursor = db.cursor()
 
     db_cursor.execute(f"ATTACH DATABASE '{KINDLE_DB_LOCATION}' as 'Y'")
@@ -275,6 +299,22 @@ def showButtons(self, layout):
 
 def getKindleDBPath():
     return os.path.join(f"{kindleConnected()[1][0]}:", "system", "vocabulary", "vocab.db")
+
+def getNumberRows():
+    if not os.path.isfile(NEW_DB):
+        return 0
+
+    dbCon = openDatabase()
+
+    count_query = QSqlQuery("SELECT COUNT(word) FROM WORDS")
+    count_query.next()
+    currentWords = count_query.value(0)
+
+    dbCon.close()
+    QSqlDatabase.removeDatabase(dbCon.connectionName())
+
+    return currentWords
+
 
 app = QApplication(sys.argv)
 w = Ui_KindleRevenant()
