@@ -36,7 +36,6 @@ if sys.platform == "win32":
 # default file locations
 KINDLE_DB_LOCATION = ""
 NEW_DB = "revenant.db"
-EXPORT_LOCATION = ""
 ANKI_FILE_DIRECTORY = r"%APPDATA%\Anki2"
 
 # Important:
@@ -63,7 +62,7 @@ class Ui_KindleRevenant(QMainWindow):
         print(os.path.join(pathlib.Path().resolve(), NEW_DB))
         print(os.path.isfile(NEW_DB))
 
-        if os.path.exists(os.path.exists(NEW_DB)):
+        if (os.path.exists(NEW_DB)):
             displayTable(self)
         showButtons(self, buttonLayout)
         kindleConnectedLabel = self._ToolBar()
@@ -74,6 +73,7 @@ class Ui_KindleRevenant(QMainWindow):
         widget.setLayout(layout)
         self.setCentralWidget(widget)
 
+        print(os.path.isfile(NEW_DB))
         self.timer = QTimer()
         self.timer.timeout.connect(lambda connectedLabel=kindleConnectedLabel: self.changeKindleConnectedMessage(connectedLabel))
         self.timer.start(1000)
@@ -91,6 +91,7 @@ class Ui_KindleRevenant(QMainWindow):
             mergeDatabases()
             displayTable(self)
         elif KINDLE_DB_LOCATION:
+            print(os.path.isfile(NEW_DB))
             mergeDatabases()
             displayTable(self)
         else:
@@ -101,10 +102,11 @@ class Ui_KindleRevenant(QMainWindow):
             )
 
     def exportClicked(self):
-        global EXPORT_LOCATION
-        EXPORT_LOCATION = QFileDialog.getSaveFileName(self, "Export DB Location",
-                                                  r'C:\Users\Sam\Documents\Summer Projects\PyQt\practiceapp',
+        print(pathlib.Path().resolve().__str__())
+        exportLocation = QFileDialog.getSaveFileName(self, "Export DB Location",
+                                                  pathlib.Path().resolve().__str__(),
                                                   'SQLite DB (*.db)')[0]
+        # exportDatabase(exportLocation)
 
     def ankiLocationClicked(self):
         global ANKI_FILE_DIRECTORY
@@ -170,13 +172,20 @@ def mergeDatabases():
         )
     elif not os.path.isfile(NEW_DB):
         shutil.copyfile(KINDLE_DB_LOCATION, NEW_DB)
+        # dbCon = openDatabase()
+
+        # if not QSqlQuery("ALTER TABLE WORDS ADD COLUMN definition TEXT"):
+        #     print("Table already exists")
+
+        # dbCon.close()
+        # QSqlDatabase.removeDatabase(dbCon.connectionName())
 
         numWords = getNumberRows()
 
         QMessageBox.information(
             None,
             "Information",
-            f"A new Kindle Revenant DB has been created at {NEW_DB}.\n{numWords} were successfully imported."
+            f"A new Kindle Revenant DB has been created at {NEW_DB}.\n{numWords} words were successfully imported."
         )
     else:
         # if both files exist then merge the tables from the old & new database together
@@ -314,6 +323,19 @@ def getNumberRows():
     QSqlDatabase.removeDatabase(dbCon.connectionName())
 
     return currentWords
+
+def exportDatabase(location):
+    db = sqlite3.connect(NEW_DB)
+    db_cursor = db.cursor()
+
+    db_cursor.execute("SELECT  FROM WORDS")
+
+    tables_to_copy = {"BOOK_INFO", "DICT_INFO", "LOOKUPS", "METADATA", "VERSION", "WORDS"}
+    for table in tables_to_copy:
+        db_cursor.execute(f"INSERT OR IGNORE INTO {table} SELECT * FROM Y.{table};")
+
+    db.commit()
+    db.close()
 
 
 app = QApplication(sys.argv)
