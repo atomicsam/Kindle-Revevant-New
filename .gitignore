@@ -1,0 +1,4 @@
+.qtcreator/
+.venv/
+__pycahce__/
+old_db/

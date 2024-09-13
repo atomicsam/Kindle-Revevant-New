@@ -37,6 +37,7 @@ if sys.platform == "win32":
 KINDLE_DB_LOCATION = ""
 NEW_DB = "revenant.db"
 ANKI_FILE_DIRECTORY = r"%APPDATA%\Anki2"
+COLUMNS = ["Word", "Stem", "Category", "Date", "Frequency", "Definition"]
 
 # Important:
 # You need to run the following command to generate the ui_form.py file
@@ -52,6 +53,8 @@ class Ui_KindleRevenant(QMainWindow):
 
         self.setWindowTitle("My App")
         self.setMinimumSize(500, 500)
+
+        self.dbCon = None
 
         layout = QVBoxLayout()
         buttonLayout = QHBoxLayout()
@@ -88,11 +91,11 @@ class Ui_KindleRevenant(QMainWindow):
         global KINDLE_DB_LOCATION
         if not KINDLE_DB_LOCATION and kindleConnected()[0]:
             KINDLE_DB_LOCATION = getKindleDBPath()
-            mergeDatabases()
+            mergeDatabases(self)
             displayTable(self)
         elif KINDLE_DB_LOCATION:
             print(os.path.isfile(NEW_DB))
-            mergeDatabases()
+            mergeDatabases(self)
             displayTable(self)
         else:
             QMessageBox().warning(
@@ -149,7 +152,7 @@ class Ui_KindleRevenant(QMainWindow):
     def double_clicked_cell(self):
         print("Double clicked cell")
 
-def mergeDatabases():
+def mergeDatabases(self):
     #  a copy of the existing kindle vocab.db if revenant.db doesn't exist
     print("The kindle location is " + KINDLE_DB_LOCATION + str(os.path.isfile(KINDLE_DB_LOCATION)))
     if not KINDLE_DB_LOCATION:
@@ -172,15 +175,14 @@ def mergeDatabases():
         )
     elif not os.path.isfile(NEW_DB):
         shutil.copyfile(KINDLE_DB_LOCATION, NEW_DB)
-        # dbCon = openDatabase()
+        self.dbCon = openDatabase()
 
-        # if not QSqlQuery("ALTER TABLE WORDS ADD COLUMN definition TEXT"):
-        #     print("Table already exists")
+        if not QSqlQuery("ALTER TABLE WORDS ADD COLUMN definition TEXT"):
+            print("Table already exists")
 
-        # dbCon.close()
-        # QSqlDatabase.removeDatabase(dbCon.connectionName())
+        closeDatabase(self.dbCon)
 
-        numWords = getNumberRows()
+        numWords = getNumberRows(self)
 
         QMessageBox.information(
             None,
@@ -189,9 +191,9 @@ def mergeDatabases():
         )
     else:
         # if both files exist then merge the tables from the old & new database together
-        currentWords = getNumberRows()
+        currentWords = getNumberRows(self)
         copyTables(NEW_DB)
-        newNumberWords = getNumberRows()
+        newNumberWords = getNumberRows(self)
         numWords = newNumberWords - currentWords
 
         QMessageBox.information(
@@ -227,9 +229,9 @@ def openDatabase():
     return con
 
 def displayTable(self):
-    db_con = openDatabase()
+    self.dbCon = openDatabase()
 
-    query = QSqlQuery("""SELECT word_key, stem, category, WORDS.timestamp, COUNT(word_key) AS frequency
+    query = QSqlQuery("""SELECT word_key, stem, category, WORDS.timestamp, COUNT(word_key) AS frequency, WORDS.definition
                         FROM LOOKUPS
                         JOIN WORDS WHERE word_key == WORDS.id
                         GROUP BY word_key
@@ -247,25 +249,26 @@ def displayTable(self):
         self.view.setItem(rows, 2, QTableWidgetItem(category_text[str(query.value(2))]))
         self.view.setItem(rows, 3, QTableWidgetItem(str(datetime.fromtimestamp(int(query.value(3)/1000)))[:10]))
         self.view.setItem(rows, 4, QTableWidgetItem(str(query.value(4))))
+        self.view.setItem(rows, 5, QTableWidgetItem(query.value(5)))
+    
+    query.finish()
+    closeDatabase(self)
+
     self.view.resizeColumnsToContents()
-
     header = self.view.horizontalHeader()
-    header.setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
-    header.setSectionResizeMode(1, QHeaderView.ResizeMode.Interactive)
-    header.setSectionResizeMode(2, QHeaderView.ResizeMode.Interactive)
-    header.setSectionResizeMode(3, QHeaderView.ResizeMode.Interactive)
-    header.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
+    for i in range(len(COLUMNS)-1):
+        header.setSectionResizeMode(i, QHeaderView.ResizeMode.Interactive)
+    header.setSectionResizeMode(len(COLUMNS)-1, QHeaderView.ResizeMode.Stretch)
 
-    db_con.close()
-    QSqlDatabase.removeDatabase(db_con.connectionName())
+    # closeDatabase(self.dbCon)
 
 
 def createDisplayTable(self, layout):
     self.view = QTableWidget()
 
-    self.view.setColumnCount(5)
+    self.view.setColumnCount(len(COLUMNS))
     self.view.verticalHeader().setVisible(False)
-    self.view.setHorizontalHeaderLabels(["Word", "Stem", "Category", "Date", "Frequency"])
+    self.view.setHorizontalHeaderLabels(COLUMNS)
     self.view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
     self.view.setEditTriggers(QAbstractItemView.NoEditTriggers)
     layout.addWidget(self.view)
@@ -309,18 +312,17 @@ def showButtons(self, layout):
 def getKindleDBPath():
     return os.path.join(f"{kindleConnected()[1][0]}:", "system", "vocabulary", "vocab.db")
 
-def getNumberRows():
+def getNumberRows(self):
     if not os.path.isfile(NEW_DB):
         return 0
 
-    dbCon = openDatabase()
+    self.dbCon = openDatabase()
 
     count_query = QSqlQuery("SELECT COUNT(word) FROM WORDS")
     count_query.next()
     currentWords = count_query.value(0)
 
-    dbCon.close()
-    QSqlDatabase.removeDatabase(dbCon.connectionName())
+    closeDatabase(self.dbCon)
 
     return currentWords
 
@@ -336,6 +338,11 @@ def exportDatabase(location):
 
     db.commit()
     db.close()
+
+def closeDatabase(self):
+    self.dbCon.close()
+    del self.dbCon
+    QSqlDatabase.removeDatabase(QSqlDatabase.database().connectionName())
 
 
 app = QApplication(sys.argv)
