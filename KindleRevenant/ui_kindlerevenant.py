@@ -1,6 +1,4 @@
 # this Python file uses the following encoding: utf-8
-import sys
-
 from PySide6.QtSql import QSqlDatabase, QSqlQuery
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
@@ -26,6 +24,9 @@ import shutil
 from datetime import datetime
 import sqlite3
 import pathlib
+import sys
+import requests
+import json
 
 # only works for windows
 # find alternatives for linux & macos
@@ -343,17 +344,34 @@ def closeDatabase(self):
 
 def createNewColumns():
     if not QSqlQuery("ALTER TABLE WORDS ADD COLUMN definition TEXT;"):
-        print("Column already exists")
+        print("definition column already exists")
     if not QSqlQuery("ALTER TABLE WORDS ADD COLUMN example TEXT;"):
-        print("Column already exists")
+        print("example column already exists")
     if not QSqlQuery("ALTER TABLE WORDS ADD COLUMN synonyms TEXT;"):
-        print("Column already exists")
+        print("synonyms column already exists")
     if not QSqlQuery("ALTER TABLE WORDS ADD COLUMN antonyms TEXT;"):
-        print("Column already exists")
+        print("antonyms column already exists")
     if not QSqlQuery("ALTER TABLE WORDS ADD COLUMN pronunciation TEXT;"):
-        print("Column already exists")
+        print("pronunciation column already exists")
     if not QSqlQuery("ALTER TABLE WORDS ADD COLUMN image TEXT;"):
-        print("Column already exists")
+        print("image column already exists")
+
+def scrapeWordDefinition(word):
+    response = requests.get("https://api.dictionaryapi.dev/api/v2/entries/en/" + word)
+    response_text = json.loads(response.text)
+    
+    if type(response_text) != list:
+        print("The requested word could not be found in the dictionary")
+
+    listOfDefinitions = ""
+    for word in response_text[0]["meanings"]:
+        listOfDefinitions += word["partOfSpeech"] + "\n"
+        for i, definition in enumerate(word["definitions"]):
+            listOfDefinitions += (str(i+1) + ". " + definition['definition'] + "\n")
+        listOfDefinitions += "\n"
+    
+    # remove the newline character from the end of the string
+    return listOfDefinitions[:-1]
 
 
 app = QApplication(sys.argv)
