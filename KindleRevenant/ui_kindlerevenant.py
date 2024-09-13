@@ -208,9 +208,10 @@ def copyTables(dbToCopy):
 
     db_cursor.execute(f"ATTACH DATABASE '{KINDLE_DB_LOCATION}' as 'Y'")
 
-    tables_to_copy = {"BOOK_INFO", "DICT_INFO", "LOOKUPS", "METADATA", "VERSION", "WORDS"}
+    tables_to_copy = ["BOOK_INFO", "DICT_INFO", "LOOKUPS", "METADATA", "VERSION"]
     for table in tables_to_copy:
         db_cursor.execute(f"INSERT OR IGNORE INTO {table} SELECT * FROM Y.{table};")
+    db_cursor.execute(f"INSERT OR IGNORE INTO WORDS(id, word, stem, lang, category, timestamp, profileid) SELECT * FROM Y.WORDS;")
 
     db.commit()
     db.close()
@@ -259,8 +260,6 @@ def displayTable(self):
     for i in range(len(COLUMNS)-1):
         header.setSectionResizeMode(i, QHeaderView.ResizeMode.Interactive)
     header.setSectionResizeMode(len(COLUMNS)-1, QHeaderView.ResizeMode.Stretch)
-
-    # closeDatabase(self.dbCon)
 
 
 def createDisplayTable(self, layout):
@@ -321,8 +320,7 @@ def getNumberRows(self):
     count_query = QSqlQuery("SELECT COUNT(word) FROM WORDS")
     count_query.next()
     currentWords = count_query.value(0)
-
-    closeDatabase(self.dbCon)
+    closeDatabase(self)
 
     return currentWords
 
@@ -348,7 +346,7 @@ def closeDatabase(self):
 app = QApplication(sys.argv)
 w = Ui_KindleRevenant()
 w.show()
-app.exec()
+app.shutdown()
 
 
 if __name__ == "__main__":
