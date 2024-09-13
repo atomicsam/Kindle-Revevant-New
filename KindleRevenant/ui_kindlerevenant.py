@@ -177,10 +177,9 @@ def mergeDatabases(self):
         shutil.copyfile(KINDLE_DB_LOCATION, NEW_DB)
         self.dbCon = openDatabase()
 
-        if not QSqlQuery("ALTER TABLE WORDS ADD COLUMN definition TEXT"):
-            print("Table already exists")
+        createNewColumns()
 
-        closeDatabase(self.dbCon)
+        closeDatabase(self)
 
         numWords = getNumberRows(self)
 
@@ -341,6 +340,20 @@ def closeDatabase(self):
     self.dbCon.close()
     del self.dbCon
     QSqlDatabase.removeDatabase(QSqlDatabase.database().connectionName())
+
+def createNewColumns():
+    if not QSqlQuery("ALTER TABLE WORDS ADD COLUMN definition TEXT;"):
+        print("Column already exists")
+    if not QSqlQuery("ALTER TABLE WORDS ADD COLUMN example TEXT;"):
+        print("Column already exists")
+    if not QSqlQuery("ALTER TABLE WORDS ADD COLUMN synonyms TEXT;"):
+        print("Column already exists")
+    if not QSqlQuery("ALTER TABLE WORDS ADD COLUMN antonyms TEXT;"):
+        print("Column already exists")
+    if not QSqlQuery("ALTER TABLE WORDS ADD COLUMN pronunciation TEXT;"):
+        print("Column already exists")
+    if not QSqlQuery("ALTER TABLE WORDS ADD COLUMN image TEXT;"):
+        print("Column already exists")
 
 
 app = QApplication(sys.argv)
