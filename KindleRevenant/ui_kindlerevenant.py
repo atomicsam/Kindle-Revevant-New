@@ -31,6 +31,7 @@ import pathlib
 import sys
 import requests
 import json
+import time
 
 # only works for windows
 # find alternatives for linux & macos
@@ -116,7 +117,7 @@ class Ui_KindleRevenant(QMainWindow):
         exportLocation = QFileDialog.getSaveFileName(self, "Export DB Location",
                                                   pathlib.Path().resolve().__str__(),
                                                   'SQLite DB (*.db)')[0]
-        # exportDatabase(exportLocation)
+        # exportDatabase(self)
 
     def ankiLocationClicked(self):
         global ANKI_FILE_DIRECTORY
@@ -125,12 +126,36 @@ class Ui_KindleRevenant(QMainWindow):
                                                   'SQLite DB (*.db)')[0]
         
     def scrapeOptionClicked(self):
+        words = getNumberRows(self)
+        wordsCompleted = 0
+        progressMessage = QLabel(f"Scraping Definitions: {wordsCompleted}/{words}")
+        self.statusBar().addWidget(progressMessage)
+
         openDatabase(self)
-        query = """
-            UPDATE WORDS
-            SET definition="this is a definition"
-            WHERE word=="pylon"
-            """
+
+        query = QSqlQuery("SELECT id, stem, definition  FROM WORDS")
+        insertionQuery = QSqlQuery()
+
+        while query.next():
+            wordsCompleted += 1
+            progressMessage.setText(f"Scraping Definitions: {wordsCompleted}/{words}")
+
+            word_id = query.value(0)
+            word_stem = query.value(1)
+            existingDef = query.value(2)
+
+            definition = scrapeWordDefinition(word_stem)
+            # if definition == "cloudflare":
+            #     time.sleep(2)
+            #     definition = scrapeWordDefinition(word_stem)
+
+            if definition and definition!="cloudflare" and not existingDef:
+                self.dbCon.transaction()
+                insertionQuery.prepare("UPDATE WORDS SET definition=:definition WHERE id=:wordID")
+                insertionQuery.bindValue(":definition", definition)
+                insertionQuery.bindValue(":wordID", word_id)
+                insertionQuery.exec()
+        self.dbCon.commit()
         closeDatabase(self)
 
     def changeKindleConnectedMessage(self, kindleConnectedLabel):
@@ -154,7 +179,7 @@ class Ui_KindleRevenant(QMainWindow):
         self.addToolBar(toolbar)
 
         scrapeOption = QAction("Add Definitions", self)
-        scrapeOption.setStatusTip("Add definitions to all the cards in database.")
+        # scrapeOption.setStatusTip("Add definitions to all the cards in database.")
         scrapeOption.triggered.connect(self.scrapeOptionClicked)
 
         toolButton = QToolButton()
@@ -196,7 +221,7 @@ def mergeDatabases(self):
         QMessageBox.warning(
             None,
             "Error",
-            f"The export location has not been set"
+            "The export location has not been set"
         )
     elif not os.path.isfile(NEW_DB):
         shutil.copyfile(KINDLE_DB_LOCATION, NEW_DB)
@@ -273,7 +298,7 @@ def displayTable(self):
         self.view.setItem(rows, 2, QTableWidgetItem(category_text[str(query.value(2))]))
         self.view.setItem(rows, 3, QTableWidgetItem(str(datetime.fromtimestamp(int(query.value(3)/1000)))[:10]))
         self.view.setItem(rows, 4, QTableWidgetItem(str(query.value(4))))
-        self.view.setItem(rows, 5, QTableWidgetItem(query.value(5)))
+        self.view.setItem(rows, 5, QTableWidgetItem(query.value(5).replace("\n", " ")))
     
     query.finish()
     closeDatabase(self)
@@ -347,18 +372,12 @@ def getNumberRows(self):
 
     return currentWords
 
-def exportDatabase(location):
-    db = sqlite3.connect(NEW_DB)
-    db_cursor = db.cursor()
+def exportDatabase(self, location):
+    openDatabase(self)
 
-    db_cursor.execute("SELECT  FROM WORDS")
+    query = QSqlQuery("SELECT")
 
-    tables_to_copy = {"BOOK_INFO", "DICT_INFO", "LOOKUPS", "METADATA", "VERSION", "WORDS"}
-    for table in tables_to_copy:
-        db_cursor.execute(f"INSERT OR IGNORE INTO {table} SELECT * FROM Y.{table};")
-
-    db.commit()
-    db.close()
+    closeDatabase(self)
 
 def closeDatabase(self):
     self.dbCon.close()
@@ -381,10 +400,14 @@ def createNewColumns():
 
 def scrapeWordDefinition(word):
     response = requests.get("https://api.dictionaryapi.dev/api/v2/entries/en/" + word)
-    response_text = json.loads(response.text)
+    try:
+        response_text = json.loads(response.text)
+    except:
+        return "cloudflare"
     
     if type(response_text) != list:
         print("The requested word could not be found in the dictionary")
+        return ""
 
     listOfDefinitions = ""
     for word in response_text[0]["meanings"]:
