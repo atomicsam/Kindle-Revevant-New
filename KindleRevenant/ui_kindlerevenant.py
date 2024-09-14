@@ -117,7 +117,7 @@ class Ui_KindleRevenant(QMainWindow):
         print(pathlib.Path().resolve().__str__())
         exportLocation = QFileDialog.getSaveFileName(self, "Export DB Location",
                                                   pathlib.Path().resolve().__str__(),
-                                                  'SQLite DB (*.db)')[0]
+                                                  'Tab Seperated txt(*.txt)')[0]
         exportDatabase(self, exportLocation)
         
 
