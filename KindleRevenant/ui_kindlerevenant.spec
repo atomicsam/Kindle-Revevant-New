@@ -21,7 +21,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='ui_kindlerevenant',
+    name='Kindle Revenant',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

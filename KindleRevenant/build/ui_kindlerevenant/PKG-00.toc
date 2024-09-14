@@ -1,5 +1,6 @@
 ('C:\\Users\\Sam\\Documents\\Summer '
- 'Projects\\PyQt\\Kindle-Revevant-New\\KindleRevenant\\build\\ui_kindlerevenant\\ui_kindlerevenant.pkg',
+ 'Projects\\PyQt\\Kindle-Revevant-New\\KindleRevenant\\build\\ui_kindlerevenant\\Kindle '
+ 'Revenant.pkg',
  {'BINARY': True,
   'DATA': True,
   'EXECUTABLE': True,

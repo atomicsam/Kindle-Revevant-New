@@ -93,7 +93,7 @@ class Ui_KindleRevenant(QMainWindow):
     def selectDbLocationClicked(self):
         global KINDLE_DB_LOCATION
         KINDLE_DB_LOCATION = QFileDialog.getOpenFileName(self, "Open Kindle DB Location",
-                                                  r'C:\Users\Sam\Documents\Summer Projects\PyQt\practiceapp',
+                                                  pathlib.Path().resolve().__str__(),
                                                   'SQLite DB (*.db)')[0]
 
     def syncKindleClicked(self):
