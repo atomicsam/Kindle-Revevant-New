@@ -387,32 +387,43 @@ def exportDatabase(self, location):
     openDatabase(self)
 
     query = QSqlQuery("""
-                    SELECT WORDS.id, word, stem, COUNT(word_key) AS frequency, WORDS.definition
+                    SELECT WORDS.id, word, stem, COUNT(word_key) AS frequency, WORDS.definition, usage
                     FROM LOOKUPS
                     JOIN WORDS WHERE word_key = WORDS.id
                     GROUP BY word_key
                     ORDER BY COUNT(word_key) DESC
                 """)
 
-    # f = open(location, "w")
-    wordID, word, stem, frequency, definition = (i for i in range(5))
+    f = open(location+".txt", "w", encoding="utf-8")
+    wordID, word, stem, frequency, definition, usage = (i for i in range(6))
     while query.next():
-        print(getAllWordUsages(query, wordID))
-        
-        # line = f""
-        # f.writeline()
-    print("doing something")
+        f.write(
+            f"{query.value(word)} ({query.value(stem)})"
+            f"\t{getAllWordUsages(query, wordID, word)}"
+            f"\t{formatDefinitions(query.value(definition))}"
+            f"\t{query.value(frequency)}"
+            "\n"
+        )
+    f.close()
     closeDatabase(self)
 
-def getAllWordUsages(query, wordID):
+def formatUsage(usage, word):
+    return usage.replace(word, f"<b><u>{word}</u></b>")
+
+def formatDefinitions(definition):
+    return definition.replace("\n", " <br>")
+
+def getAllWordUsages(query, wordID, wordIndex):
     usagesQuery = QSqlQuery()
     usagesQuery.prepare("SELECT usage FROM LOOKUPS WHERE word_key=:currentWord")
     usagesQuery.bindValue(":currentWord", query.value(wordID))
     usagesQuery.exec()
 
     usages = ""
+    index = 1
     while usagesQuery.next():
-        usages += usagesQuery.value(0)
+        usages += f"{index}) {formatUsage(usagesQuery.value(0), query.value(wordIndex))} <br>"
+        index += 1
     
     return usages
 
