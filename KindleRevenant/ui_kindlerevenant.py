@@ -16,6 +16,10 @@ from PySide6.QtWidgets import (
     QToolBar,
     QLabel,
     QMessageBox,
+    QStatusBar,
+    QToolButton,
+    QMenu,
+    QWidgetAction,
 )
 from PySide6.QtCore import QTimer
 
@@ -77,6 +81,8 @@ class Ui_KindleRevenant(QMainWindow):
         widget.setLayout(layout)
         self.setCentralWidget(widget)
 
+        self.setStatusBar(QStatusBar(self))
+
         print(os.path.isfile(NEW_DB))
         self.timer = QTimer()
         self.timer.timeout.connect(lambda connectedLabel=kindleConnectedLabel: self.changeKindleConnectedMessage(connectedLabel))
@@ -117,6 +123,15 @@ class Ui_KindleRevenant(QMainWindow):
         ANKI_FILE_DIRECTORY = QFileDialog.getOpenFileName(self, "Open Kindle DB Location",
                                                   os.path.expandvars(ANKI_FILE_DIRECTORY),
                                                   'SQLite DB (*.db)')[0]
+        
+    def scrapeOptionClicked(self):
+        openDatabase(self)
+        query = """
+            UPDATE WORDS
+            SET definition="this is a definition"
+            WHERE word=="pylon"
+            """
+        closeDatabase(self)
 
     def changeKindleConnectedMessage(self, kindleConnectedLabel):
         if kindleConnected()[0]:
@@ -138,17 +153,26 @@ class Ui_KindleRevenant(QMainWindow):
         toolbar = QToolBar("Main Toolbar")
         self.addToolBar(toolbar)
 
-        file_action = QAction("Options", self)
-        file_action.setStatusTip("Options Menu")
-        file_action.triggered.connect(self.onMyToolBarButtonClick)
+        scrapeOption = QAction("Add Definitions", self)
+        scrapeOption.setStatusTip("Add definitions to all the cards in database.")
+        scrapeOption.triggered.connect(self.scrapeOptionClicked)
 
-        toolbar.addAction(file_action)
+        toolButton = QToolButton()
+        toolButton.setText("Options")
+
+        optionsMenu = QMenu(toolButton)        
+        optionsMenu.addAction(scrapeOption)
+        toolButton.setMenu(optionsMenu)
+
+        toolButton.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        
+        toolButtonAction = QWidgetAction(self)
+        toolButtonAction.setDefaultWidget(toolButton)
+
+        toolbar.addAction(toolButtonAction)
         toolbar.addWidget(kindleConnectedLabel)
 
         return kindleConnectedLabel
-
-    def onMyToolBarButtonClick(self, s):
-        print("click", s)
 
     def double_clicked_cell(self):
         print("Double clicked cell")
@@ -176,7 +200,7 @@ def mergeDatabases(self):
         )
     elif not os.path.isfile(NEW_DB):
         shutil.copyfile(KINDLE_DB_LOCATION, NEW_DB)
-        self.dbCon = openDatabase()
+        openDatabase(self)
 
         createNewColumns()
 
@@ -216,21 +240,20 @@ def copyTables(dbToCopy):
     db.commit()
     db.close()
 
-def openDatabase():
-    con = QSqlDatabase.addDatabase("QSQLITE")
-    con.setDatabaseName(NEW_DB)
+def openDatabase(self):
+    self.dbCon = QSqlDatabase.addDatabase("QSQLITE")
+    self.dbCon.setDatabaseName(NEW_DB)
 
-    if not con.open():
+    if not self.dbCon.open():
         QMessageBox.critical(
             None,
             "App Name - Error !"
-            "Database Error: %s" % con.lastError().databaseText(),
+            "Database Error: %s" % self.dbCon.lastError().databaseText(),
         )
         sys.exit(1)
-    return con
 
 def displayTable(self):
-    self.dbCon = openDatabase()
+    openDatabase(self)
 
     query = QSqlQuery("""SELECT word_key, stem, category, WORDS.timestamp, COUNT(word_key) AS frequency, WORDS.definition
                         FROM LOOKUPS
@@ -315,7 +338,7 @@ def getNumberRows(self):
     if not os.path.isfile(NEW_DB):
         return 0
 
-    self.dbCon = openDatabase()
+    openDatabase(self)
 
     count_query = QSqlQuery("SELECT COUNT(word) FROM WORDS")
     count_query.next()
