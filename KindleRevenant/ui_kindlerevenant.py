@@ -117,7 +117,7 @@ class Ui_KindleRevenant(QMainWindow):
         exportLocation = QFileDialog.getSaveFileName(self, "Export DB Location",
                                                   pathlib.Path().resolve().__str__(),
                                                   'SQLite DB (*.db)')[0]
-        # exportDatabase(self)
+        exportDatabase(self, exportLocation)
 
     def ankiLocationClicked(self):
         global ANKI_FILE_DIRECTORY
@@ -128,6 +128,8 @@ class Ui_KindleRevenant(QMainWindow):
     def scrapeOptionClicked(self):
         words = getNumberRows(self)
         wordsCompleted = 0
+        numScrapedSuccesfully = 0
+
         progressMessage = QLabel(f"Scraping Definitions: {wordsCompleted}/{words}")
         self.statusBar().addWidget(progressMessage)
 
@@ -138,6 +140,7 @@ class Ui_KindleRevenant(QMainWindow):
 
         while query.next():
             wordsCompleted += 1
+            
             progressMessage.setText(f"Scraping Definitions: {wordsCompleted}/{words}")
 
             word_id = query.value(0)
@@ -155,6 +158,14 @@ class Ui_KindleRevenant(QMainWindow):
                 insertionQuery.bindValue(":definition", definition)
                 insertionQuery.bindValue(":wordID", word_id)
                 insertionQuery.exec()
+                numScrapedSuccesfully += 1
+
+        QMessageBox.information(
+            None,
+            "Success",
+            f"{numScrapedSuccesfully} definitions were successfully added."
+        )
+
         self.dbCon.commit()
         closeDatabase(self)
 
@@ -375,9 +386,35 @@ def getNumberRows(self):
 def exportDatabase(self, location):
     openDatabase(self)
 
-    query = QSqlQuery("SELECT")
+    query = QSqlQuery("""
+                    SELECT WORDS.id, word, stem, COUNT(word_key) AS frequency, WORDS.definition
+                    FROM LOOKUPS
+                    JOIN WORDS WHERE word_key = WORDS.id
+                    GROUP BY word_key
+                    ORDER BY COUNT(word_key) DESC
+                """)
 
+    # f = open(location, "w")
+    wordID, word, stem, frequency, definition = (i for i in range(5))
+    while query.next():
+        print(getAllWordUsages(query, wordID))
+        
+        # line = f""
+        # f.writeline()
+    print("doing something")
     closeDatabase(self)
+
+def getAllWordUsages(query, wordID):
+    usagesQuery = QSqlQuery()
+    usagesQuery.prepare("SELECT usage FROM LOOKUPS WHERE word_key=:currentWord")
+    usagesQuery.bindValue(":currentWord", query.value(wordID))
+    usagesQuery.exec()
+
+    usages = ""
+    while usagesQuery.next():
+        usages += usagesQuery.value(0)
+    
+    return usages
 
 def closeDatabase(self):
     self.dbCon.close()
@@ -418,6 +455,7 @@ def scrapeWordDefinition(word):
     
     # remove the newline character from the end of the string
     return listOfDefinitions[:-1]
+
 
 
 app = QApplication(sys.argv)
