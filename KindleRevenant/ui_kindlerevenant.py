@@ -32,6 +32,7 @@ import sys
 import requests
 import json
 import time
+from AyDictionary import AyDictionary
 
 # only works for windows
 # find alternatives for linux & macos
@@ -118,6 +119,7 @@ class Ui_KindleRevenant(QMainWindow):
                                                   pathlib.Path().resolve().__str__(),
                                                   'SQLite DB (*.db)')[0]
         exportDatabase(self, exportLocation)
+        
 
     def ankiLocationClicked(self):
         global ANKI_FILE_DIRECTORY
@@ -147,12 +149,15 @@ class Ui_KindleRevenant(QMainWindow):
             word_stem = query.value(1)
             existingDef = query.value(2)
 
-            definition = scrapeWordDefinition(word_stem)
-            # if definition == "cloudflare":
-            #     time.sleep(2)
-            #     definition = scrapeWordDefinition(word_stem)
+            if not existingDef:
+                definition = scrapeWordDefinition(word_stem)
+                while definition=="cloudflare":
+                    time.sleep(5)
+                    definition = scrapeWordDefinition(word_stem)
+            else:
+                definition = ""
 
-            if definition and definition!="cloudflare" and not existingDef:
+            if definition:
                 self.dbCon.transaction()
                 insertionQuery.prepare("UPDATE WORDS SET definition=:definition WHERE id=:wordID")
                 insertionQuery.bindValue(":definition", definition)
@@ -168,6 +173,7 @@ class Ui_KindleRevenant(QMainWindow):
 
         self.dbCon.commit()
         closeDatabase(self)
+        displayTable(self)
 
     def changeKindleConnectedMessage(self, kindleConnectedLabel):
         if kindleConnected()[0]:
@@ -402,9 +408,11 @@ def exportDatabase(self, location):
             f"\t{getAllWordUsages(query, wordID, word)}"
             f"\t{formatDefinitions(query.value(definition))}"
             f"\t{query.value(frequency)}"
+            "1"
             "\n"
         )
     f.close()
+    
     closeDatabase(self)
 
 def formatUsage(usage, word):
@@ -451,6 +459,7 @@ def scrapeWordDefinition(word):
     try:
         response_text = json.loads(response.text)
     except:
+        print("cloudflare")
         return "cloudflare"
     
     if type(response_text) != list:
