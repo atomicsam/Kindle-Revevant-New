@@ -79,7 +79,7 @@
  [],
  False,
  False,
- 1726349812,
+ 1726409522,
  [('run.exe',
    'c:\\Users\\Sam\\Documents\\Summer '
    'Projects\\PyQt\\Kindle-Revevant-New\\KindleRevenant\\.venv\\Lib\\site-packages\\PyInstaller\\bootloader\\Windows-64bit-intel\\run.exe',
