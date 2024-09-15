@@ -277,7 +277,7 @@ def copyTables(dbToCopy):
     tables_to_copy = ["BOOK_INFO", "DICT_INFO", "LOOKUPS", "METADATA", "VERSION"]
     for table in tables_to_copy:
         db_cursor.execute(f"INSERT OR IGNORE INTO {table} SELECT * FROM Y.{table};")
-    db_cursor.execute(f"INSERT OR IGNORE INTO WORDS(id, word, stem, lang, category, timestamp, profileid) SELECT * FROM Y.WORDS;")
+    db_cursor.execute(f"INSERT OR IGNORE INTO WORDS(id, word, stem, lang, category, timestamp, profileid) SELECT id, word, stem, lang, category, timestamp, profileid FROM Y.WORDS;")
 
     db.commit()
     db.close()
@@ -408,7 +408,7 @@ def exportDatabase(self, location):
             f"\t{getAllWordUsages(query, wordID, word)}"
             f"\t{formatDefinitions(query.value(definition))}"
             f"\t{query.value(frequency)}"
-            "1"
+            "\t1"
             "\n"
         )
     f.close()

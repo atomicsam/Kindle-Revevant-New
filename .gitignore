@@ -2,3 +2,5 @@
 .venv/
 __pycahce__/
 old_db/
+KindleRevenant/exports/myexportedfile.txt.txt
+KindleRevenant/revenant.db
