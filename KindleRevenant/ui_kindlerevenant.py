@@ -400,7 +400,7 @@ def exportDatabase(self, location):
                     ORDER BY COUNT(word_key) DESC
                 """)
 
-    f = open(location+".txt", "w", encoding="utf-8")
+    f = open(location, "w", encoding="utf-8")
     wordID, word, stem, frequency, definition, usage = (i for i in range(6))
     while query.next():
         f.write(
