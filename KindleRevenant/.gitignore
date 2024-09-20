@@ -72,3 +72,6 @@ CMakeLists.txt.user*
 *.dll
 *.exe
 
+# Virtual Enviroments
+# --------
+/testing_qt
