@@ -33,4 +33,4 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        path: build\ui_kindlerevenant\ui_kindlerevenant.exe
+        path: build\ui_kindlerevenant\Kindle Revenant.exe
