@@ -28,6 +28,9 @@ jobs:
     - name: Package windows .exe file
       run: pyinstaller ui_kindlerevenant.spec
 
+    - name: List Current Directory
+      run: dir
+
     - uses: actions/upload-artifact@v4
       with:
         path: build\ui_kindlerevenant\ui_kindlerevenant.exe
