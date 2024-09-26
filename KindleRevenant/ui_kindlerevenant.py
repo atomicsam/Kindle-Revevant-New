@@ -32,7 +32,6 @@ import sys
 import requests
 import json
 import time
-from AyDictionary import AyDictionary
 
 # only works for windows
 # find alternatives for linux & macos
