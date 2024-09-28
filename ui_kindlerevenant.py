@@ -400,7 +400,7 @@ class Ui_KindleRevenant(QMainWindow):
                         return True, currentDrive[0]
                 return False, ""
             except Exception as driveError:
-                print(type(driveError).__name__, driveError)
+                print(type(driveError), driveError)
                 print("Error! Can't Access Windows Drive Information")
                 return False, ""
         return False, ""
@@ -524,7 +524,7 @@ class Ui_KindleRevenant(QMainWindow):
         try:
             response_text = json.loads(response.text)
         except Exception as cloudflareError:
-            print(type(cloudflareError).__name__)
+            print(type(cloudflareError))
             print("cloudflare")
             return "cloudflare"
 
