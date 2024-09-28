@@ -100,12 +100,12 @@ class Ui_KindleRevenant(QMainWindow):
         global KINDLE_DB_LOCATION
         if not KINDLE_DB_LOCATION and self.kindleConnected()[0]:
             KINDLE_DB_LOCATION = self.getKindleDBPath(self)
-            self.mergeDatabases(self)
-            self.displayTable(self)
+            self.mergeDatabases()
+            self.displayTable()
         elif KINDLE_DB_LOCATION:
             print(os.path.isfile(NEW_DB))
-            self.mergeDatabases(self)
-            self.displayTable(self)
+            self.mergeDatabases()
+            self.displayTable()
         else:
             QMessageBox().warning(
                 None,
@@ -133,7 +133,7 @@ class Ui_KindleRevenant(QMainWindow):
             'SQLite DB (*.db)')[0]
 
     def scrapeOptionClicked(self):
-        words = self.getNumberRows(self)
+        words = self.getNumberRows()
         wordsCompleted = 0
         numScrapedSuccesfully = 0
 
@@ -180,8 +180,8 @@ class Ui_KindleRevenant(QMainWindow):
         )
 
         self.dbCon.commit()
-        self.closeDatabase(self)
-        self.displayTable(self)
+        self.closeDatabase()
+        self.displayTable()
 
     def changeKindleConnectedMessage(self, kindleConnectedLabel):
         if self.kindleConnected()[0]:
@@ -266,9 +266,9 @@ class Ui_KindleRevenant(QMainWindow):
 
             self.createNewColumns()
 
-            self.closeDatabase(self)
+            self.closeDatabase()
 
-            numWords = self.getNumberRows(self)
+            numWords = self.getNumberRows()
 
             QMessageBox.information(
                 None,
@@ -304,7 +304,7 @@ class Ui_KindleRevenant(QMainWindow):
 
         for table in tables_to_copy:
             db_cursor.execute(f"INSERT OR IGNORE INTO {table}"
-                              "SELECT * FROM Y.{table};")
+                              f" SELECT * FROM Y.{table};")
         db_cursor.execute("INSERT OR IGNORE INTO WORDS"
                           "(id, word, stem, lang, category, "
                           "timestamp, profileid)"
@@ -314,6 +314,10 @@ class Ui_KindleRevenant(QMainWindow):
 
         db.commit()
         db.close()
+
+        if os.stat(NEW_DB).st_size == 0:
+            os.remove(NEW_DB)
+
 
     def openDatabase(self):
         self.dbCon = QSqlDatabase.addDatabase("QSQLITE")
@@ -399,8 +403,7 @@ class Ui_KindleRevenant(QMainWindow):
                             win32file.DRIVE_REMOVABLE):
                         return True, currentDrive[0]
                 return False, ""
-            except Exception as driveError:
-                print(type(driveError), driveError)
+            except win32api.error(21, 'GetVolumeInformation', 'The device is not ready'):
                 print("Error! Can't Access Windows Drive Information")
                 return False, ""
         return False, ""
