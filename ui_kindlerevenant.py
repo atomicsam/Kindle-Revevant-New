@@ -1,4 +1,5 @@
 # this Python file uses the following encoding: utf-8
+from ui_form import Ui_Ui_KindleRevenant
 from PySide6.QtSql import QSqlDatabase, QSqlQuery
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
@@ -45,11 +46,6 @@ NEW_DB = "revenant.db"
 ANKI_FILE_DIRECTORY = r"%APPDATA%\Anki2"
 COLUMNS = ["Word", "Stem", "Category", "Date", "Frequency", "Definition"]
 
-# Important:
-# You need to run the following command to generate the ui_form.py file
-#     pyside6-uic form.ui -o ui_form.py, or
-#     pyside2-uic form.ui -o ui_form.py
-from ui_form import Ui_Ui_KindleRevenant
 
 class Ui_KindleRevenant(QMainWindow):
     def __init__(self, parent=None):
@@ -86,14 +82,19 @@ class Ui_KindleRevenant(QMainWindow):
 
         print(os.path.isfile(NEW_DB))
         self.timer = QTimer()
-        self.timer.timeout.connect(lambda connectedLabel=kindleConnectedLabel: self.changeKindleConnectedMessage(connectedLabel))
+        self.timer.timeout.connect(
+            lambda label=kindleConnectedLabel:
+            self.changeKindleConnectedMessage(label)
+        )
         self.timer.start(1000)
 
     def selectDbLocationClicked(self):
         global KINDLE_DB_LOCATION
-        KINDLE_DB_LOCATION = QFileDialog.getOpenFileName(self, "Open Kindle DB Location",
-                                                  pathlib.Path().resolve().__str__(),
-                                                  'SQLite DB (*.db)')[0]
+        KINDLE_DB_LOCATION = QFileDialog.getOpenFileName(
+            self, "Open Kindle DB Location",
+            pathlib.Path().resolve().__str__(),
+            'SQLite DB (*.db)'
+        )[0]
 
     def syncKindleClicked(self):
         global KINDLE_DB_LOCATION
@@ -109,29 +110,35 @@ class Ui_KindleRevenant(QMainWindow):
             QMessageBox().warning(
                 None,
                 "Warning",
-                "Please ensure the kindle is connected.\nAlternatively you can specify the database location manually."
+                """
+                Please ensure the kindle is connected.
+                Alternatively you can specify the database location manually.
+                """
             )
 
     def exportClicked(self):
         print(pathlib.Path().resolve().__str__())
-        exportLocation = QFileDialog.getSaveFileName(self, "Export DB Location",
-                                                  pathlib.Path().resolve().__str__(),
-                                                  'Tab Seperated txt(*.txt)')[0]
+        exportLocation = QFileDialog.getSaveFileName(
+            self, "Export DB Location",
+            pathlib.Path().resolve().__str__(),
+            'Tab Seperated txt(*.txt)'
+        )[0]
         self.exportDatabase(exportLocation)
-        
 
     def ankiLocationClicked(self):
         global ANKI_FILE_DIRECTORY
-        ANKI_FILE_DIRECTORY = QFileDialog.getOpenFileName(self, "Open Kindle DB Location",
-                                                  os.path.expandvars(ANKI_FILE_DIRECTORY),
-                                                  'SQLite DB (*.db)')[0]
-        
+        ANKI_FILE_DIRECTORY = QFileDialog.getOpenFileName(
+            self, "Open Kindle DB Location",
+            os.path.expandvars(ANKI_FILE_DIRECTORY),
+            'SQLite DB (*.db)')[0]
+
     def scrapeOptionClicked(self):
         words = self.getNumberRows(self)
         wordsCompleted = 0
         numScrapedSuccesfully = 0
 
-        progressMessage = QLabel(f"Scraping Definitions: {wordsCompleted}/{words}")
+        progressMessage = QLabel("Scraping Definitions: "
+                                 f"{wordsCompleted}/{words}")
         self.statusBar().addWidget(progressMessage)
 
         self.openDatabase()
@@ -141,8 +148,8 @@ class Ui_KindleRevenant(QMainWindow):
 
         while query.next():
             wordsCompleted += 1
-            
-            progressMessage.setText(f"Scraping Definitions: {wordsCompleted}/{words}")
+            progressMessage.setText("Scraping Definitions: "
+                                    f"{wordsCompleted}/{words}")
 
             word_id = query.value(0)
             word_stem = query.value(1)
@@ -150,15 +157,17 @@ class Ui_KindleRevenant(QMainWindow):
 
             if not existingDef:
                 definition = self.scrapeWordDefinition(word_stem)
-                while definition=="cloudflare":
-                    time.sleep(5)
+                while definition == "cloudflare":
+                    time.sleep(10)
                     definition = self.scrapeWordDefinition(word_stem)
             else:
                 definition = ""
 
             if definition:
                 self.dbCon.transaction()
-                insertionQuery.prepare("UPDATE WORDS SET definition=:definition WHERE id=:wordID")
+                insertionQuery.prepare("UPDATE WORDS SET "
+                                       "definition=:definition "
+                                       "WHERE id=:wordID")
                 insertionQuery.bindValue(":definition", definition)
                 insertionQuery.bindValue(":wordID", word_id)
                 insertionQuery.exec()
@@ -177,36 +186,44 @@ class Ui_KindleRevenant(QMainWindow):
     def changeKindleConnectedMessage(self, kindleConnectedLabel):
         if self.kindleConnected()[0]:
             kindleConnectedLabel.setText("Kindle Connected")
-            kindleConnectedLabel.setStyleSheet("font-weight: bold; text-align:left; color: green;")
+            kindleConnectedLabel.setStyleSheet("font-weight: bold;"
+                                               "text-align:left;"
+                                               "color: green;")
         else:
             kindleConnectedLabel.setText("Kindle Disconnected")
-            kindleConnectedLabel.setStyleSheet("font-weight: bold; text-align:left; color: grey;")
-
+            kindleConnectedLabel.setStyleSheet("font-weight: bold;"
+                                               "text-align:left;"
+                                               "color: grey;")
 
     def _ToolBar(self):
         if self.kindleConnected()[0]:
             kindleConnectedLabel = QLabel("Kindle Connected")
-            kindleConnectedLabel.setStyleSheet("font-weight: bold; text-align:left; color: green;")
+            kindleConnectedLabel.setStyleSheet("font-weight: bold;"
+                                               "text-align:left;"
+                                               "color: green;")
         else:
             kindleConnectedLabel = QLabel("Kindle Disconnected")
-            kindleConnectedLabel.setStyleSheet("font-weight: bold; text-align:left; color: grey;")
+            kindleConnectedLabel.setStyleSheet("font-weight: bold;"
+                                               "text-align:left;"
+                                               "color: grey;")
 
         toolbar = QToolBar("Main Toolbar")
         self.addToolBar(toolbar)
 
         scrapeOption = QAction("Add Definitions", self)
-        # scrapeOption.setStatusTip("Add definitions to all the cards in database.")
+        scrapeOption.setStatusTip(
+            "Add definitions to all the cards in database.")
         scrapeOption.triggered.connect(self.scrapeOptionClicked)
 
         toolButton = QToolButton()
         toolButton.setText("Options")
 
-        optionsMenu = QMenu(toolButton)        
+        optionsMenu = QMenu(toolButton)
         optionsMenu.addAction(scrapeOption)
         toolButton.setMenu(optionsMenu)
 
         toolButton.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
-        
+
         toolButtonAction = QWidgetAction(self)
         toolButtonAction.setDefaultWidget(toolButton)
 
@@ -220,18 +237,22 @@ class Ui_KindleRevenant(QMainWindow):
 
     def mergeDatabases(self):
         #  a copy of the existing kindle vocab.db if revenant.db doesn't exist
-        print("The kindle location is " + KINDLE_DB_LOCATION + str(os.path.isfile(KINDLE_DB_LOCATION)))
+        print("The kindle location is "
+              f"{KINDLE_DB_LOCATION}"
+              f"{str(os.path.isfile(KINDLE_DB_LOCATION))}")
         if not KINDLE_DB_LOCATION:
             QMessageBox.warning(
                 None,
                 "Error",
-                "The Kindle DB was not found or it's location has not been specified."
+                "The Kindle DB was not found "
+                "or its location has not been specified."
             )
         elif not os.path.isfile(KINDLE_DB_LOCATION):
             QMessageBox.warning(
                 None,
                 "Error",
-                f"The specified kindle db location {KINDLE_DB_LOCATION} does not exist"
+                f"The specified kindle db location "
+                f"{KINDLE_DB_LOCATION} does not exist"
             )
         elif not NEW_DB:
             QMessageBox.warning(
@@ -252,10 +273,11 @@ class Ui_KindleRevenant(QMainWindow):
             QMessageBox.information(
                 None,
                 "Information",
-                f"A new Kindle Revenant DB has been created at {NEW_DB}.\n{numWords} words were successfully imported."
+                (f"A new Kindle Revenant DB has been created at {NEW_DB}"
+                 f".\n{numWords} words were successfully imported.")
             )
         else:
-            # if both files exist then merge the tables from the old & new database together
+            # if both files exist merge the tables from the old & new db
             currentWords = self.getNumberRows()
             self.copyTables(NEW_DB)
             newNumberWords = self.getNumberRows()
@@ -264,7 +286,9 @@ class Ui_KindleRevenant(QMainWindow):
             QMessageBox.information(
                 None,
                 "Information",
-                f"{numWords} words were successfully imported from the following location:\n{KINDLE_DB_LOCATION}"
+                (f"{numWords} words were successfully imported "
+                 "from the following location:"
+                 f"\n{KINDLE_DB_LOCATION}")
             )
 
     @staticmethod
@@ -274,10 +298,19 @@ class Ui_KindleRevenant(QMainWindow):
 
         db_cursor.execute(f"ATTACH DATABASE '{KINDLE_DB_LOCATION}' as 'Y'")
 
-        tables_to_copy = ["BOOK_INFO", "DICT_INFO", "LOOKUPS", "METADATA", "VERSION"]
+        tables_to_copy = ["BOOK_INFO", "DICT_INFO",
+                          "LOOKUPS", "METADATA",
+                          "VERSION"]
+
         for table in tables_to_copy:
-            db_cursor.execute(f"INSERT OR IGNORE INTO {table} SELECT * FROM Y.{table};")
-        db_cursor.execute(f"INSERT OR IGNORE INTO WORDS(id, word, stem, lang, category, timestamp, profileid) SELECT id, word, stem, lang, category, timestamp, profileid FROM Y.WORDS;")
+            db_cursor.execute(f"INSERT OR IGNORE INTO {table}"
+                              "SELECT * FROM Y.{table};")
+        db_cursor.execute("INSERT OR IGNORE INTO WORDS"
+                          "(id, word, stem, lang, category, "
+                          "timestamp, profileid)"
+                          "SELECT id, word, stem, lang, category, "
+                          "timestamp, profileid "
+                          "FROM Y.WORDS;")
 
         db.commit()
         db.close()
@@ -297,26 +330,35 @@ class Ui_KindleRevenant(QMainWindow):
     def displayTable(self):
         self.openDatabase()
 
-        query = QSqlQuery("""SELECT word_key, stem, category, WORDS.timestamp, COUNT(word_key) AS frequency, WORDS.definition
-                            FROM LOOKUPS
-                            JOIN WORDS WHERE word_key == WORDS.id
-                            GROUP BY word_key
-                            ORDER BY COUNT(word_key) DESC
-                            """
-                        )
+        query = QSqlQuery("SELECT word_key, stem, category, WORDS.timestamp, "
+                          "COUNT(word_key)"
+                          "AS frequency, WORDS.definition"
+                          "FROM LOOKUPS"
+                          "JOIN WORDS WHERE word_key == WORDS.id"
+                          "GROUP BY word_key"
+                          "ORDER BY COUNT(word_key) DESC")
 
         category_text = {"0": "Learning", "1": "Mastered"}
 
         while query.next():
             rows = self.view.rowCount()
             self. view.setRowCount(rows + 1)
-            self.view.setItem(rows, 0, QTableWidgetItem(self.formatWordKey(query.value(0))))
-            self.view.setItem(rows, 1, QTableWidgetItem(query.value(1)))
-            self.view.setItem(rows, 2, QTableWidgetItem(category_text[str(query.value(2))]))
-            self.view.setItem(rows, 3, QTableWidgetItem(str(datetime.fromtimestamp(int(query.value(3)/1000)))[:10]))
-            self.view.setItem(rows, 4, QTableWidgetItem(str(query.value(4))))
-            self.view.setItem(rows, 5, QTableWidgetItem(query.value(5).replace("\n", " ")))
-        
+            self.view.setItem(
+                rows, 0, QTableWidgetItem(self.formatWordKey(query.value(0))))
+            self.view.setItem(
+                rows, 1, QTableWidgetItem(query.value(1)))
+            self.view.setItem(
+                rows, 2, QTableWidgetItem(category_text[str(query.value(2))]))
+            self.view.setItem(
+                rows, 3, QTableWidgetItem(
+                    str(datetime.fromtimestamp(int(query.value(3)/1000)))[:10]
+                    )
+                )
+            self.view.setItem(
+                rows, 4, QTableWidgetItem(str(query.value(4))))
+            self.view.setItem(
+                rows, 5, QTableWidgetItem(query.value(5).replace("\n", " ")))
+
         query.finish()
         self.closeDatabase()
 
@@ -324,8 +366,8 @@ class Ui_KindleRevenant(QMainWindow):
         header = self.view.horizontalHeader()
         for i in range(len(COLUMNS)-1):
             header.setSectionResizeMode(i, QHeaderView.ResizeMode.Interactive)
-        header.setSectionResizeMode(len(COLUMNS)-1, QHeaderView.ResizeMode.Stretch)
-
+        header.setSectionResizeMode(
+            len(COLUMNS)-1, QHeaderView.ResizeMode.Stretch)
 
     def createDisplayTable(self, layout):
         self.view = QTableWidget()
@@ -333,7 +375,8 @@ class Ui_KindleRevenant(QMainWindow):
         self.view.setColumnCount(len(COLUMNS))
         self.view.verticalHeader().setVisible(False)
         self.view.setHorizontalHeaderLabels(COLUMNS)
-        self.view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.view.setSelectionBehavior(
+            QAbstractItemView.SelectionBehavior.SelectRows)
         self.view.setEditTriggers(QAbstractItemView.NoEditTriggers)
         layout.addWidget(self.view)
 
@@ -350,7 +393,10 @@ class Ui_KindleRevenant(QMainWindow):
                 for i in range(len(drives)//4):
                     # checks if drive letter is called 'Kindle'
                     currentDrive = drives[i*4:(i+1)*4]
-                    if win32api.GetVolumeInformation(currentDrive)[0] == "Kindle" and win32file.GetDriveType(currentDrive) == win32file.DRIVE_REMOVABLE:
+                    if (win32api.GetVolumeInformation(currentDrive)[0] ==
+                            "Kindle" and
+                            win32file.GetDriveType(currentDrive) ==
+                            win32file.DRIVE_REMOVABLE):
                         return True, currentDrive[0]
                 return False, ""
             except:
@@ -376,7 +422,12 @@ class Ui_KindleRevenant(QMainWindow):
         layout.addWidget(export_button)
 
     def getKindleDBPath(self):
-        return os.path.join(f"{self.kindleConnected()[1][0]}:", "system", "vocabulary", "vocab.db")
+        return os.path.join(
+            f"{self.kindleConnected()[1][0]}:",
+            "system",
+            "vocabulary",
+            "vocab.db"
+            )
 
     def getNumberRows(self):
         if not os.path.isfile(NEW_DB):
@@ -395,7 +446,8 @@ class Ui_KindleRevenant(QMainWindow):
         self.openDatabase()
 
         query = QSqlQuery("""
-                        SELECT WORDS.id, word, stem, COUNT(word_key) AS frequency, WORDS.definition, usage
+                        SELECT WORDS.id, word, stem, COUNT(word_key)
+                          AS frequency, WORDS.definition, usage
                         FROM LOOKUPS
                         JOIN WORDS WHERE word_key = WORDS.id
                         GROUP BY word_key
@@ -403,7 +455,7 @@ class Ui_KindleRevenant(QMainWindow):
                     """)
 
         f = open(location, "w", encoding="utf-8")
-        wordID, word, stem, frequency, definition, usage = (i for i in range(6))
+        wordID, word, stem, frequency, definition = (i for i in range(5))
         while query.next():
             f.write(
                 f"{query.value(word)} ({query.value(stem)})"
@@ -414,7 +466,7 @@ class Ui_KindleRevenant(QMainWindow):
                 "\n"
             )
         f.close()
-        
+
         self.closeDatabase()
 
     @staticmethod
@@ -427,16 +479,19 @@ class Ui_KindleRevenant(QMainWindow):
 
     def getAllWordUsages(self, query, wordID, wordIndex):
         usagesQuery = QSqlQuery()
-        usagesQuery.prepare("SELECT usage FROM LOOKUPS WHERE word_key=:currentWord")
+        usagesQuery.prepare("SELECT usage FROM LOOKUPS WHERE "
+                            "word_key=:currentWord")
         usagesQuery.bindValue(":currentWord", query.value(wordID))
         usagesQuery.exec()
 
         usages = ""
         index = 1
         while usagesQuery.next():
-            usages += f"{index}) {self.formatUsage(usagesQuery.value(0), query.value(wordIndex))} <br>"
+            formattedString = self.formatUsage(
+                usagesQuery.value(0), query.value(wordIndex))
+            usages += f"{index}) {formattedString} <br>"
             index += 1
-        
+
         return usages
 
     def closeDatabase(self):
@@ -461,14 +516,17 @@ class Ui_KindleRevenant(QMainWindow):
 
     @staticmethod
     def scrapeWordDefinition(word):
-        response = requests.get("https://api.dictionaryapi.dev/api/v2/entries/en/" + word)
+        response = requests.get(
+            "https://api.dictionaryapi.dev/api/v2/entries/en/" +
+            word
+            )
         try:
             response_text = json.loads(response.text)
         except:
             print("cloudflare")
             return "cloudflare"
-        
-        if type(response_text) != list:
+
+        if type(response_text) is list:
             print("The requested word could not be found in the dictionary")
             return ""
 
@@ -476,19 +534,20 @@ class Ui_KindleRevenant(QMainWindow):
         for word in response_text[0]["meanings"]:
             listOfDefinitions += word["partOfSpeech"] + "\n"
             for i, definition in enumerate(word["definitions"]):
-                listOfDefinitions += (str(i+1) + ". " + definition['definition'] + "\n")
+                listOfDefinitions += (
+                    str(i+1) + ". " +
+                    definition['definition'] + "\n"
+                )
             listOfDefinitions += "\n"
-        
+
         # remove the newline character from the end of the string
         return listOfDefinitions[:-1]
-
 
 
 app = QApplication(sys.argv)
 w = Ui_KindleRevenant()
 w.show()
 app.shutdown()
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
