@@ -109,3 +109,6 @@ __pycache__/
 
 # export files
 /exports
+
+# virtual enviroment
+/venv
