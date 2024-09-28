@@ -86,7 +86,7 @@ class Ui_KindleRevenant(QMainWindow):
             lambda label=kindleConnectedLabel:
             self.changeKindleConnectedMessage(label)
         )
-        self.timer.start(1000)
+        self.timer.start(5000)
 
     def selectDbLocationClicked(self):
         global KINDLE_DB_LOCATION
@@ -399,7 +399,8 @@ class Ui_KindleRevenant(QMainWindow):
                             win32file.DRIVE_REMOVABLE):
                         return True, currentDrive[0]
                 return False, ""
-            except:
+            except Exception as driveError:
+                print(type(driveError).__name__, driveError)
                 print("Error! Can't Access Windows Drive Information")
                 return False, ""
         return False, ""
@@ -522,7 +523,8 @@ class Ui_KindleRevenant(QMainWindow):
             )
         try:
             response_text = json.loads(response.text)
-        except:
+        except Exception as cloudflareError:
+            print(type(cloudflareError).__name__)
             print("cloudflare")
             return "cloudflare"
 
