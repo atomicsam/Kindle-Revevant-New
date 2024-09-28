@@ -27,3 +27,6 @@ jobs:
 
     - name: Run Linter Test
       run: flake8 ui_kindlerevenant.py
+
+    - name: Run pytest-qt Tests
+      run: pytest .\tests\test_features.py

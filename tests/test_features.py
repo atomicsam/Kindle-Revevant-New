@@ -23,6 +23,9 @@ from PySide6.QtWidgets import (
     QWidgetAction,
 )
 
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent.parent))
 import ui_kindlerevenant
 
 @pytest.fixture
