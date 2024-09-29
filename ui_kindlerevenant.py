@@ -400,7 +400,7 @@ class Ui_KindleRevenant(QMainWindow):
                             win32file.DRIVE_REMOVABLE):
                         return True, currentDrive[0]
                 return False, ""
-            except win32api.error(21, 'GetVolumeInformation', 'The device is not ready'):
+            except win32api.error:
                 print("Error! Can't Access Windows Drive Information")
                 return False, ""
         return False, ""
