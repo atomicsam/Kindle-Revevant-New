@@ -99,7 +99,7 @@ class Ui_KindleRevenant(QMainWindow):
     def syncKindleClicked(self):
         global KINDLE_DB_LOCATION
         if not KINDLE_DB_LOCATION and self.kindleConnected()[0]:
-            KINDLE_DB_LOCATION = self.getKindleDBPath(self)
+            KINDLE_DB_LOCATION = self.getKindleDBPath()
             self.mergeDatabases()
             self.displayTable()
         elif KINDLE_DB_LOCATION:
@@ -232,9 +232,6 @@ class Ui_KindleRevenant(QMainWindow):
 
         return kindleConnectedLabel
 
-    def double_clicked_cell(self):
-        print("Double clicked cell")
-
     def mergeDatabases(self):
         #  a copy of the existing kindle vocab.db if revenant.db doesn't exist
         print("The kindle location is "
@@ -335,11 +332,11 @@ class Ui_KindleRevenant(QMainWindow):
         self.openDatabase()
 
         query = QSqlQuery("SELECT word_key, stem, category, WORDS.timestamp, "
-                          "COUNT(word_key)"
-                          "AS frequency, WORDS.definition"
-                          "FROM LOOKUPS"
-                          "JOIN WORDS WHERE word_key == WORDS.id"
-                          "GROUP BY word_key"
+                          "COUNT(word_key) "
+                          "AS frequency, WORDS.definition "
+                          "FROM LOOKUPS "
+                          "JOIN WORDS WHERE word_key == WORDS.id "
+                          "GROUP BY word_key "
                           "ORDER BY COUNT(word_key) DESC")
 
         category_text = {"0": "Learning", "1": "Mastered"}
