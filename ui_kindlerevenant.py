@@ -315,7 +315,6 @@ class Ui_KindleRevenant(QMainWindow):
         if os.stat(NEW_DB).st_size == 0:
             os.remove(NEW_DB)
 
-
     def openDatabase(self):
         self.dbCon = QSqlDatabase.addDatabase("QSQLITE")
         self.dbCon.setDatabaseName(NEW_DB)
